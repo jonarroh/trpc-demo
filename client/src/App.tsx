@@ -20,19 +20,47 @@ function App() {
 }
 
 function AppContent() {
+	const [newProduct, setNewProduct] = useState('');
 	const helloMessage = trpc.useQuery(['products']);
+	const addProduct = trpc.useMutation(['createProduct']);
+	const client = trpc.useContext();
+
+	if (helloMessage.isLoading) {
+		return <div>Loading...</div>;
+	}
+	if (helloMessage.isError) {
+		return <div>Error</div>;
+	}
+
 	const { data } = helloMessage;
-	console.log(data);
 
 	return (
 		<>
-			{data?.map(product => (
-				<div key={product.id}>
-					<h1>{product.name}</h1>
-					<p>{product.description}</p>
-					<small>{product.price}</small>
-				</div>
-			))}
+			<form
+				onSubmit={e => {
+					e.preventDefault();
+					addProduct.mutate(newProduct, {
+						onSuccess(value) {
+							client.invalidateQueries(['products']);
+						}
+					});
+				}}>
+				<input
+					type="text"
+					value={newProduct}
+					onChange={e => setNewProduct(e.target.value)}
+				/>
+				<button type="submit">Add</button>
+			</form>
+			<div>
+				{data?.map(product => (
+					<div key={product.id}>
+						<h1>{product.name}</h1>
+						<p>{product.description}</p>
+						<small>{product.price}</small>
+					</div>
+				))}
+			</div>
 		</>
 	);
 }
